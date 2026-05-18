@@ -104,34 +104,18 @@ def extract_to_csv(pcap_file, output_csv, label):
     df.to_csv(output_csv, index=False)
     print(f"✅ 완료: {output_csv} ({len(df)}개 행 생성)")
 
-# --- [중요] 수정된 라벨 시스템 가이드 ---
-# 0: 정상 (Normal)
-# 1: ICMP Flood
-# 2: Port Scan
-# 3: SSH Brute Force (로그 기반 특징 추가 필요)
-# 4: DNS 이상 트래픽
-# 5: ARP Spoofing (로그 기반 특징 추가 필요)
 
-# 0. 정상 패킷 (Normal Traffic)
-# 공격이 없는 평상시 상태의 데이터입니다.
-# extract_to_csv(r'normal\normal_001.pcap', r'normal\normal_features.csv', label=0)
-
-# 1. ICMP Flood
-# Ping 패킷을 대량으로 보내는 공격입니다.
-# extract_to_csv(r'icmp_flood\icmp_flood_001.pcap', r'icmp_flood\icmp_features.csv', label=1)
-
-# 2. Port Scan
-# 서버의 열린 포트를 확인하기 위해 여러 포트를 찌르는 공격입니다.
-# extract_to_csv(r'port_scan\port_scan_001.pcap', r'port_scan\port_features.csv', label=2)
-
-# 3. SSH Brute Force (PCAP 기반)
-# 무차별 대입 공격 중 발생하는 패킷 특징을 추출합니다. (나중에 auth.log와 병합 예정)
-# extract_to_csv(r'ssh_brute\ssh_001.pcap', r'ssh_brute\ssh_features.csv', label=3)
-
-# 4. DNS 이상 트래픽 (DNS Abnormal)
-# 비정상적으로 많은 DNS 질의를 보내는 공격입니다.
-# extract_to_csv(r'dns_abnormal\dns_001.pcap', r'dns_abnormal\dns_features.csv', label=4)
-
-# 5. ARP Spoofing (PCAP 기반)
-# 주소 변조 공격 시 발생하는 Gratuitous ARP 패킷 등을 추출합니다. (나중에 ip neigh와 병합 예정)
-# extract_to_csv(r'arp_spoofing\arp_spoofing.pcap', r'arp_spoofing\arp_features.csv', label=5)
+# 파이썬 파일을 실행할 때 동작하는 부분입니다.
+if __name__ == "__main__":
+    # 알려주신 폴더 경로에 파일명만 추가하여 세팅했습니다.
+    # ⚠️ '파일명.pcap'과 '결과.csv' 부분을 실제 파일 이름으로 바꿔주세요.
+    
+    input_pcap = r"C:\Users\kjs64\OneDrive\문서\카카오톡 받은 파일\normal_001.pcap"
+    output_csv = r"C:\Users\kjs64\OneDrive\문서\카카오톡 받은 파일\normal_001.csv"
+    
+    # ⚠️ 분석하려는 파일의 성격에 맞게 라벨(label)을 0~5 사이로 수정하세요.
+    # 0: 정상, 1: ICMP Flood, 2: Port Scan, 3: SSH Brute Force, 4: DNS 이상 트래픽, 5: ARP Spoofing
+    target_label = 0
+    
+    # 변환 실행
+    extract_to_csv(input_pcap, output_csv, label=target_label)
