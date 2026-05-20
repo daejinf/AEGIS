@@ -1,4 +1,5 @@
 import joblib
+from sklearn.metrics import classification_report
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -7,7 +8,7 @@ import os
 
 # 1. 병합된 데이터 불러오기
 # (이전 파일 경로와 동일하게 맞춰주세요)
-file_path = r"C:\Users\kjs64\OneDrive\바탕 화면\AEGIS\data\total_dataset.csv"
+file_path = r"C:\Users\kjs64\OneDrive\바탕 화면\AEGIS\data\all_dataset.csv"
 df = pd.read_csv(file_path)
 
 print(f"[*] 데이터 로드 완료: 총 {len(df)}개의 데이터")
@@ -38,5 +39,10 @@ print(f"✅ AI 모델 학습 완료! (정확도: {accuracy * 100:.2f}%)")
 print("=========================================")
 print("\n[상세 성적표]")
 print(classification_report(y_test, y_pred))
-joblib.dump(model, 'aegis_model.pkl')
-print("[*] AI 모델이 'aegis_model.pkl'로 저장되었습니다.")
+
+# =========================================================
+# 💡 [추가된 부분] 학습된 모델을 .pkl 파일로 저장하기
+# =========================================================
+save_path = r"C:\Users\kjs64\OneDrive\바탕 화면\AEGIS\ai_model\rf_model.pkl"
+joblib.dump(model, save_path)
+print(f"\n✅ 완료: 학습된 모델이 [{save_path}]에 안전하게 저장되었습니다!")

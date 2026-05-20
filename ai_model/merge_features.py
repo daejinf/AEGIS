@@ -7,14 +7,13 @@ folder_path = r"C:\Users\kjs64\OneDrive\바탕 화면\AEGIS\data"
 # 2. 합칠 파일 이름 목록
 # ⚠️ 실제로 생성하신 5개 파일의 이름과 정확히 일치하는지 확인해 주세요.
 file_names = [
-    "normal_001.csv",   # 라벨 0
-    "icmp_features.csv",     # 라벨 1
-    "port_scan_02.csv",     # 라벨 2
-    "ssh_features.csv",      # 라벨 3
-    "dns_anomaly.csv",       # 라벨 4
-    "arp_features.csv"       # 라벨 5 (만약 파일이 5개라면 제외하거나 이름을 맞춰주세요)
+    "normal_002.csv",
+    "port_scan.csv",
+    "DNS.csv",
+    "icmp_flood.csv",
+    "ssh_login.csv",
+    "arp_spoofing.csv"
 ]
-
 print("데이터 병합을 시작합니다...")
 
 # 데이터를 담을 빈 리스트 준비
@@ -36,7 +35,7 @@ if df_list:
     combined_df = pd.concat(df_list, ignore_index=True)
 
     # 같은 폴더 안에 total_dataset.csv로 저장
-    output_path = os.path.join(folder_path, "total_dataset.csv")
+    output_path = os.path.join(folder_path, "all_dataset.csv")
     combined_df.to_csv(output_path, index=False)
 
     print("\n=========================================")
