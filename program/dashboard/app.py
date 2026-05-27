@@ -12,21 +12,21 @@ LOG_FILE = "live_dashboard.json"
 REFRESH_SECONDS = 2
 
 LABEL_META = {
-    0: {"name": "정상", "headline": "정상 흐름 유지", "tone": "safe", "risk": 8},
-    1: {"name": "ICMP Flood", "headline": "ICMP Flood 감지", "tone": "danger", "risk": 92},
-    2: {"name": "Port Scan", "headline": "Port Scan 감지", "tone": "warn", "risk": 74},
-    3: {"name": "SSH Brute Force", "headline": "SSH Brute Force 감지", "tone": "danger", "risk": 86},
-    4: {"name": "ARP Spoofing", "headline": "ARP Spoofing 감지", "tone": "danger", "risk": 90},
-    5: {"name": "DNS Anomaly", "headline": "DNS Anomaly 감지", "tone": "warn", "risk": 68},
+    0: {"name": "정상", "tone": "safe", "risk": 8},
+    1: {"name": "ICMP Flood", "tone": "danger", "risk": 92},
+    2: {"name": "Port Scan", "tone": "warn", "risk": 74},
+    3: {"name": "SSH Brute Force", "tone": "danger", "risk": 86},
+    4: {"name": "ARP Spoofing", "tone": "danger", "risk": 90},
+    5: {"name": "DNS Anomaly", "tone": "warn", "risk": 68},
 }
 
 TONE_META = {
-    "safe": {"bg": "#ecfdf3", "fg": "#027a48", "line": "#12b76a", "soft": "#d1fadf"},
-    "warn": {"bg": "#fff7ed", "fg": "#c2410c", "line": "#f97316", "soft": "#fed7aa"},
-    "danger": {"bg": "#fef2f2", "fg": "#b42318", "line": "#ef4444", "soft": "#fecaca"},
+    "safe": {"bg": "#ECFDF3", "fg": "#027A48", "line": "#22C55E"},
+    "warn": {"bg": "#FFF7ED", "fg": "#C2410C", "line": "#F97316"},
+    "danger": {"bg": "#FEF2F2", "fg": "#B42318", "line": "#EF4444"},
 }
 
-SIGNAL_LABELS = [
+SIGNAL_ITEMS = [
     ("total_pkt_cnt", "전체 패킷"),
     ("tcp_cnt", "TCP"),
     ("udp_cnt", "UDP"),
@@ -48,25 +48,25 @@ def inject_styles() -> None:
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
 
         :root {
-            --bg: #f4f7fb;
-            --surface: rgba(255, 255, 255, 0.90);
-            --surface-solid: #ffffff;
-            --text: #111827;
-            --muted: #6b7280;
-            --blue: #0064ff;
-            --blue-soft: #eaf2ff;
-            --stroke: rgba(17, 24, 39, 0.08);
-            --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-            --radius-hero: 32px;
-            --radius-card: 26px;
-            --radius-mini: 20px;
+            --bg: #f2f4f6;
+            --surface: rgba(255, 255, 255, 0.94);
+            --surface-strong: #ffffff;
+            --line: rgba(2, 32, 71, 0.08);
+            --text: #191f28;
+            --subtle: #6b7684;
+            --muted: #8b95a1;
+            --blue: #3182f6;
+            --blue-deep: #1b64da;
+            --shadow: 0 22px 50px rgba(2, 32, 71, 0.08);
+            --radius-xl: 32px;
+            --radius-lg: 24px;
+            --radius-md: 18px;
         }
 
         .stApp {
             background:
-                radial-gradient(circle at top left, rgba(0, 100, 255, 0.10), transparent 24%),
-                radial-gradient(circle at top right, rgba(125, 211, 252, 0.18), transparent 26%),
-                linear-gradient(180deg, #f8fbff 0%, var(--bg) 52%, #eef3fa 100%);
+                radial-gradient(circle at top right, rgba(49, 130, 246, 0.10), transparent 24%),
+                linear-gradient(180deg, #f8fbff 0%, var(--bg) 55%, #eef2f7 100%);
             color: var(--text);
         }
 
@@ -76,50 +76,31 @@ def inject_styles() -> None:
         }
 
         .block-container {
-            max-width: 1380px;
+            max-width: 1360px;
             padding-top: 1.6rem;
-            padding-bottom: 2.4rem;
+            padding-bottom: 2.6rem;
         }
 
         [data-testid="stHeader"] {
             background: transparent;
         }
 
-        [data-testid="stToolbar"] {
-            right: 1rem;
-        }
-
-        .hero-shell,
-        .surface-shell {
+        .surface-card {
             background: var(--surface);
-            backdrop-filter: blur(22px);
-            border: 1px solid var(--stroke);
+            border: 1px solid var(--line);
             box-shadow: var(--shadow);
+            border-radius: var(--radius-xl);
         }
 
-        .hero-shell {
-            border-radius: var(--radius-hero);
-            padding: 34px 34px 30px 34px;
-            margin-bottom: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-shell::after {
-            content: "";
-            position: absolute;
-            right: -40px;
-            bottom: -40px;
-            width: 220px;
-            height: 220px;
-            border-radius: 999px;
-            background: radial-gradient(circle, rgba(0, 100, 255, 0.14), rgba(0, 100, 255, 0));
+        .hero-card {
+            padding: 30px 32px;
+            margin-bottom: 18px;
         }
 
         .hero-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.35fr) 260px;
-            gap: 24px;
+            grid-template-columns: minmax(0, 1.2fr) 240px;
+            gap: 22px;
             align-items: center;
         }
 
@@ -127,10 +108,10 @@ def inject_styles() -> None:
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 12px;
+            padding: 9px 13px;
             border-radius: 999px;
-            background: var(--blue-soft);
-            color: var(--blue);
+            background: #e8f3ff;
+            color: var(--blue-deep);
             font-size: 0.78rem;
             font-weight: 800;
             letter-spacing: 0.08em;
@@ -138,20 +119,19 @@ def inject_styles() -> None:
         }
 
         .hero-title {
-            margin: 18px 0 10px 0;
-            font-size: 3.4rem;
+            margin: 16px 0 8px 0;
+            font-size: 3.25rem;
             line-height: 0.98;
-            letter-spacing: -0.06em;
+            letter-spacing: -0.07em;
             font-weight: 800;
-            color: var(--text);
         }
 
-        .hero-sub {
+        .hero-copy {
             margin: 0;
-            color: var(--muted);
+            color: var(--subtle);
             font-size: 1rem;
-            font-weight: 500;
-            line-height: 1.65;
+            line-height: 1.6;
+            font-weight: 600;
         }
 
         .chip-row {
@@ -167,11 +147,11 @@ def inject_styles() -> None:
             gap: 8px;
             padding: 10px 14px;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid rgba(17, 24, 39, 0.06);
-            color: #1f2937;
+            background: var(--surface-strong);
+            border: 1px solid rgba(2, 32, 71, 0.06);
             font-size: 0.92rem;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--text);
         }
 
         .chip-dot {
@@ -181,39 +161,21 @@ def inject_styles() -> None:
             background: var(--blue);
         }
 
-        .risk-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .status-panel {
+            padding: 20px 22px;
+            border-radius: 26px;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            border: 1px solid rgba(2, 32, 71, 0.06);
         }
 
-        .risk-ring {
-            width: 210px;
-            height: 210px;
-            border-radius: 999px;
-            display: grid;
-            place-items: center;
-            background: conic-gradient(var(--ring-color) calc(var(--risk) * 1%), rgba(17, 24, 39, 0.08) 0);
-            position: relative;
+        .status-label {
+            font-size: 0.84rem;
+            color: var(--muted);
+            font-weight: 700;
+            margin-bottom: 10px;
         }
 
-        .risk-ring::before {
-            content: "";
-            position: absolute;
-            inset: 16px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 999px;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
-        }
-
-        .risk-core {
-            position: relative;
-            z-index: 2;
-            text-align: center;
-        }
-
-        .risk-number {
-            display: block;
+        .status-value {
             font-size: 3rem;
             line-height: 1;
             font-weight: 800;
@@ -221,80 +183,71 @@ def inject_styles() -> None:
             color: var(--text);
         }
 
-        .risk-caption {
-            margin-top: 8px;
-            display: block;
-            color: var(--muted);
-            font-size: 0.92rem;
-            font-weight: 700;
-        }
-
-        .risk-status {
-            margin-top: 10px;
+        .status-badge {
             display: inline-flex;
-            padding: 7px 12px;
+            margin-top: 12px;
+            padding: 8px 12px;
             border-radius: 999px;
-            font-size: 0.86rem;
+            font-size: 0.84rem;
             font-weight: 800;
-            background: var(--tone-bg);
-            color: var(--tone-fg);
         }
 
-        .stat-card,
-        .surface-shell {
-            border-radius: var(--radius-card);
+        .status-foot {
+            margin-top: 12px;
+            font-size: 0.92rem;
+            color: var(--subtle);
+            font-weight: 600;
+            line-height: 1.45;
         }
 
-        .stat-card {
-            background: rgba(255, 255, 255, 0.88);
-            border: 1px solid var(--stroke);
-            box-shadow: var(--shadow);
-            padding: 22px 22px 20px 22px;
-            min-height: 138px;
+        .mini-card {
+            padding: 20px 20px 18px 20px;
+            min-height: 132px;
         }
 
-        .stat-label {
+        .mini-label {
             color: var(--muted);
             font-size: 0.9rem;
             font-weight: 700;
             margin-bottom: 16px;
         }
 
-        .stat-value {
+        .mini-value {
             color: var(--text);
-            font-size: 2.2rem;
+            font-size: 2.1rem;
             line-height: 1;
             font-weight: 800;
             letter-spacing: -0.05em;
         }
 
-        .stat-foot {
+        .mini-foot {
             margin-top: 10px;
-            color: var(--muted);
-            font-size: 0.94rem;
+            color: var(--subtle);
+            font-size: 0.93rem;
             line-height: 1.55;
+            font-weight: 600;
         }
 
-        .surface-shell {
+        .body-card {
             padding: 24px;
             height: 100%;
         }
 
-        .section-kicker {
+        .section-label {
             color: var(--muted);
-            font-size: 0.82rem;
-            font-weight: 700;
+            font-size: 0.78rem;
+            font-weight: 800;
             letter-spacing: 0.08em;
             text-transform: uppercase;
         }
 
         .section-title {
             margin: 8px 0 18px 0;
-            font-size: 1.35rem;
-            line-height: 1.15;
-            letter-spacing: -0.03em;
-            font-weight: 800;
             color: var(--text);
+            font-size: 1.4rem;
+            font-weight: 800;
+            line-height: 1.12;
+            letter-spacing: -0.04em;
         }
 
         .mix-row {
@@ -309,18 +262,19 @@ def inject_styles() -> None:
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
             margin-bottom: 8px;
-            font-size: 0.96rem;
+            font-size: 0.98rem;
             font-weight: 700;
             color: var(--text);
         }
 
         .mix-track {
             width: 100%;
-            height: 11px;
+            height: 10px;
             border-radius: 999px;
-            background: rgba(17, 24, 39, 0.06);
             overflow: hidden;
+            background: rgba(2, 32, 71, 0.06);
         }
 
         .mix-fill {
@@ -335,25 +289,25 @@ def inject_styles() -> None:
         }
 
         .signal-box {
-            padding: 18px 18px 16px 18px;
-            border-radius: var(--radius-mini);
-            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,247,251,0.96));
-            border: 1px solid rgba(17, 24, 39, 0.06);
+            padding: 18px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff, #f8fafc);
+            border: 1px solid rgba(2, 32, 71, 0.06);
         }
 
-        .signal-label {
+        .signal-name {
             color: var(--muted);
-            font-size: 0.88rem;
+            font-size: 0.86rem;
             font-weight: 700;
             margin-bottom: 10px;
         }
 
         .signal-value {
+            color: var(--text);
             font-size: 2rem;
             font-weight: 800;
             line-height: 1;
             letter-spacing: -0.05em;
-            color: var(--text);
         }
 
         .feed-item {
@@ -362,7 +316,7 @@ def inject_styles() -> None:
             justify-content: space-between;
             gap: 12px;
             padding: 14px 0;
-            border-bottom: 1px solid rgba(17, 24, 39, 0.06);
+            border-bottom: 1px solid rgba(2, 32, 71, 0.06);
         }
 
         .feed-item:first-child {
@@ -370,99 +324,87 @@ def inject_styles() -> None:
         }
 
         .feed-item:last-child {
-            border-bottom: 0;
             padding-bottom: 0;
+            border-bottom: 0;
         }
 
         .feed-name {
             color: var(--text);
             font-size: 1rem;
             font-weight: 800;
-            line-height: 1.2;
+            line-height: 1.18;
         }
 
         .feed-meta {
             margin-top: 6px;
-            color: var(--muted);
+            color: var(--subtle);
             font-size: 0.9rem;
             font-weight: 600;
         }
 
-        .feed-pill {
+        .feed-risk {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 72px;
-            padding: 8px 12px;
+            min-width: 64px;
+            padding: 8px 10px;
             border-radius: 999px;
             font-size: 0.84rem;
             font-weight: 800;
-            white-space: nowrap;
         }
 
-        .ledger-shell {
-            margin-top: 20px;
+        .ledger-wrap {
+            margin-top: 18px;
+            padding: 24px;
         }
 
-        .ledger-table-wrap {
-            overflow-x: auto;
-            border-radius: 22px;
-            border: 1px solid rgba(17, 24, 39, 0.07);
-            background: rgba(255,255,255,0.92);
+        .ledger-head,
+        .ledger-row {
+            display: grid;
+            grid-template-columns: 120px 150px 110px 100px 100px 90px 90px 90px 90px 90px;
+            gap: 0;
+            align-items: center;
         }
 
-        table.ledger-table {
-            width: 100%;
-            min-width: 920px;
-            border-collapse: collapse;
-        }
-
-        .ledger-table thead th {
-            position: sticky;
-            top: 0;
-            padding: 16px 18px;
-            text-align: left;
-            font-size: 0.84rem;
+        .ledger-head {
+            padding: 0 8px 14px 8px;
+            color: var(--muted);
+            font-size: 0.78rem;
             font-weight: 800;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
-            color: #6b7280;
-            background: rgba(248, 250, 252, 0.96);
-            border-bottom: 1px solid rgba(17, 24, 39, 0.08);
         }
 
-        .ledger-table tbody td {
-            padding: 16px 18px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #1f2937;
-            border-bottom: 1px solid rgba(17, 24, 39, 0.06);
-        }
-
-        .ledger-table tbody tr:last-child td {
-            border-bottom: 0;
-        }
-
-        .ledger-table tbody tr:hover td {
-            background: rgba(0, 100, 255, 0.03);
+        .ledger-row {
+            padding: 16px 8px;
+            border-top: 1px solid rgba(2, 32, 71, 0.06);
+            font-size: 0.94rem;
+            font-weight: 700;
+            color: var(--text);
         }
 
         .ledger-badge {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
+            width: fit-content;
             padding: 7px 11px;
             border-radius: 999px;
             font-size: 0.82rem;
             font-weight: 800;
         }
 
-        .empty-shell {
-            padding: 70px 32px;
+        .ledger-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(2, 32, 71, 0.05);
+        }
+
+        .empty-state {
+            padding: 70px 30px;
             text-align: center;
-            border-radius: var(--radius-hero);
-            background: rgba(255,255,255,0.86);
-            border: 1px dashed rgba(17,24,39,0.12);
-            box-shadow: var(--shadow);
         }
 
         .empty-title {
@@ -474,8 +416,9 @@ def inject_styles() -> None:
         }
 
         .empty-copy {
-            color: var(--muted);
+            color: var(--subtle);
             font-size: 1rem;
+            line-height: 1.6;
             font-weight: 600;
         }
 
@@ -488,8 +431,9 @@ def inject_styles() -> None:
                 font-size: 2.7rem;
             }
 
-            .risk-wrap {
-                justify-content: flex-start;
+            .ledger-head,
+            .ledger-row {
+                min-width: 1020px;
             }
         }
         </style>
@@ -499,27 +443,25 @@ def inject_styles() -> None:
 
 
 def load_data() -> pd.DataFrame:
-    records = []
+    rows = []
     if os.path.exists(LOG_FILE):
         with open(LOG_FILE, "r", encoding="utf-8") as file:
             for line in file:
                 line = line.strip()
                 if line:
-                    records.append(json.loads(line))
-    return pd.DataFrame(records)
+                    rows.append(json.loads(line))
+    return pd.DataFrame(rows)
 
 
 def format_timestamp(raw_value) -> str:
     if pd.isna(raw_value):
         return "-"
-
     if isinstance(raw_value, str):
         stripped = raw_value.strip()
         if stripped.isdigit():
             raw_value = int(stripped)
         else:
             return stripped
-
     try:
         return datetime.fromtimestamp(int(raw_value)).strftime("%H:%M:%S")
     except (TypeError, ValueError, OSError):
@@ -549,44 +491,35 @@ def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
 
     normalized["label"] = normalized.get("label", 0).fillna(0).astype(int)
     normalized["confidence"] = normalized.get("confidence", 0).fillna(0).astype(float)
+    normalized["status_name"] = normalized["label"].map(lambda value: LABEL_META.get(value, LABEL_META[0])["name"])
+    normalized["tone"] = normalized["label"].map(lambda value: LABEL_META.get(value, LABEL_META[0])["tone"])
+    normalized["risk_score"] = normalized["label"].map(lambda value: LABEL_META.get(value, LABEL_META[0])["risk"])
     normalized["display_time"] = normalized["timestamp"].map(format_timestamp)
-    normalized["status_name"] = normalized["label"].map(
-        lambda value: LABEL_META.get(value, LABEL_META[0])["name"]
-    )
-    normalized["headline"] = normalized["label"].map(
-        lambda value: LABEL_META.get(value, LABEL_META[0])["headline"]
-    )
-    normalized["tone"] = normalized["label"].map(
-        lambda value: LABEL_META.get(value, LABEL_META[0])["tone"]
-    )
-    normalized["risk_score"] = normalized["label"].map(
-        lambda value: LABEL_META.get(value, LABEL_META[0])["risk"]
-    )
     normalized["confidence_pct"] = (normalized["confidence"] * 100).round(1)
     return normalized
 
 
-def build_stat_card(title: str, value: str, foot: str) -> str:
+def stat_card(title: str, value: str, foot: str) -> str:
     return f"""
-    <div class="stat-card">
-        <div class="stat-label">{escape(title)}</div>
-        <div class="stat-value">{escape(value)}</div>
-        <div class="stat-foot">{escape(foot)}</div>
+    <div class="surface-card mini-card">
+        <div class="mini-label">{escape(title)}</div>
+        <div class="mini-value">{escape(value)}</div>
+        <div class="mini-foot">{escape(foot)}</div>
     </div>
     """
 
 
-def build_attack_mix(df: pd.DataFrame) -> str:
+def attack_mix_html(df: pd.DataFrame) -> str:
     counts = df["label"].value_counts().to_dict()
     max_count = max(counts.values()) if counts else 1
-    ordered_labels = [1, 3, 4, 2, 5, 0]
-    rows = []
-    for label in ordered_labels:
+    order = [1, 3, 4, 2, 5, 0]
+    blocks = []
+    for label in order:
         meta = LABEL_META[label]
         tone = TONE_META[meta["tone"]]
         count = counts.get(label, 0)
-        width = 0 if max_count == 0 else max(10, int((count / max_count) * 100)) if count else 0
-        rows.append(
+        width = 0 if count == 0 else max(8, int((count / max_count) * 100))
+        blocks.append(
             f"""
             <div class="mix-row">
                 <div class="mix-head">
@@ -599,29 +532,29 @@ def build_attack_mix(df: pd.DataFrame) -> str:
             </div>
             """
         )
-    return "".join(rows)
+    return "".join(blocks)
 
 
-def build_signal_grid(latest_row: pd.Series) -> str:
-    cards = []
-    for column, label in SIGNAL_LABELS:
-        value = int(latest_row.get(column, 0) or 0)
-        cards.append(
+def signal_grid_html(latest: pd.Series) -> str:
+    items = []
+    for column, label in SIGNAL_ITEMS:
+        value = int(latest.get(column, 0) or 0)
+        items.append(
             f"""
             <div class="signal-box">
-                <div class="signal-label">{escape(label)}</div>
+                <div class="signal-name">{escape(label)}</div>
                 <div class="signal-value">{value:,}</div>
             </div>
             """
         )
-    return "".join(cards)
+    return "".join(items)
 
 
-def build_recent_feed(df: pd.DataFrame) -> str:
+def recent_feed_html(df: pd.DataFrame) -> str:
     rows = []
     for _, row in df.head(6).iterrows():
         tone = TONE_META[row["tone"]]
-        confidence = f"{row['confidence_pct']:.0f}%" if row["confidence_pct"] else "-"
+        confidence = f"{row['confidence_pct']:.0f}%"
         rows.append(
             f"""
             <div class="feed-item">
@@ -629,65 +562,53 @@ def build_recent_feed(df: pd.DataFrame) -> str:
                     <div class="feed-name">{escape(str(row['status_name']))}</div>
                     <div class="feed-meta">{escape(str(row['display_time']))} · confidence {confidence}</div>
                 </div>
-                <span class="feed-pill" style="background:{tone['bg']};color:{tone['fg']};">
-                    {int(row['risk_score'])}
-                </span>
+                <span class="feed-risk" style="background:{tone['bg']};color:{tone['fg']};">{int(row['risk_score'])}</span>
             </div>
             """
         )
     return "".join(rows)
 
 
-def build_ledger(df: pd.DataFrame) -> str:
+def ledger_html(df: pd.DataFrame) -> str:
     latest_rows = df.iloc[::-1].head(10).copy()
-    table_rows = []
+    body = []
     for _, row in latest_rows.iterrows():
         tone = TONE_META[row["tone"]]
-        table_rows.append(
+        body.append(
             f"""
-            <tr>
-                <td>{escape(str(row['display_time']))}</td>
-                <td>
-                    <span class="ledger-badge" style="background:{tone['bg']};color:{tone['fg']};">
-                        {escape(str(row['status_name']))}
-                    </span>
-                </td>
-                <td>{row['confidence_pct']:.0f}%</td>
-                <td>{int(row['risk_score'])}</td>
-                <td>{int(row.get('total_pkt_cnt', 0) or 0):,}</td>
-                <td>{int(row.get('tcp_cnt', 0) or 0):,}</td>
-                <td>{int(row.get('udp_cnt', 0) or 0):,}</td>
-                <td>{int(row.get('icmp_cnt', 0) or 0):,}</td>
-                <td>{int(row.get('dns_query_cnt', 0) or 0):,}</td>
-                <td>{int(row.get('failed_login_cnt', 0) or 0):,}</td>
-            </tr>
+            <div class="ledger-row">
+                <div>{escape(str(row['display_time']))}</div>
+                <div><span class="ledger-badge" style="background:{tone['bg']};color:{tone['fg']};">{escape(str(row['status_name']))}</span></div>
+                <div>{row['confidence_pct']:.0f}%</div>
+                <div>{int(row['risk_score'])}</div>
+                <div>{int(row.get('total_pkt_cnt', 0) or 0):,}</div>
+                <div>{int(row.get('tcp_cnt', 0) or 0):,}</div>
+                <div>{int(row.get('udp_cnt', 0) or 0):,}</div>
+                <div>{int(row.get('icmp_cnt', 0) or 0):,}</div>
+                <div>{int(row.get('dns_query_cnt', 0) or 0):,}</div>
+                <div>{int(row.get('failed_login_cnt', 0) or 0):,}</div>
+            </div>
             """
         )
 
     return f"""
-    <div class="surface-shell ledger-shell">
-        <div class="section-kicker">Ledger</div>
+    <div class="surface-card ledger-wrap">
+        <div class="section-label">Event Log</div>
         <div class="section-title">최근 이벤트 로그</div>
-        <div class="ledger-table-wrap">
-            <table class="ledger-table">
-                <thead>
-                    <tr>
-                        <th>시간</th>
-                        <th>유형</th>
-                        <th>신뢰도</th>
-                        <th>리스크</th>
-                        <th>패킷</th>
-                        <th>TCP</th>
-                        <th>UDP</th>
-                        <th>ICMP</th>
-                        <th>DNS</th>
-                        <th>SSH</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {''.join(table_rows)}
-                </tbody>
-            </table>
+        <div class="ledger-scroll">
+            <div class="ledger-head">
+                <div>시간</div>
+                <div>유형</div>
+                <div>신뢰도</div>
+                <div>리스크</div>
+                <div>패킷</div>
+                <div>TCP</div>
+                <div>UDP</div>
+                <div>ICMP</div>
+                <div>DNS</div>
+                <div>SSH</div>
+            </div>
+            {''.join(body)}
         </div>
     </div>
     """
@@ -703,50 +624,41 @@ with placeholder.container():
     if df.empty:
         st.markdown(
             """
-            <div class="empty-shell">
+            <div class="surface-card empty-state">
                 <div class="empty-title">라이브 데이터 대기 중</div>
-                <div class="empty-copy">Extractor, predictor, monitor가 순서대로 실행되면 이 화면이 즉시 채워집니다.</div>
+                <div class="empty-copy">Extractor, predictor, monitor가 순서대로 실행되면 이 화면이 실시간 관제 대시보드로 채워집니다.</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
     else:
         latest = df.iloc[-1]
-        latest_meta = LABEL_META.get(int(latest["label"]), LABEL_META[0])
+        latest_meta = LABEL_META[int(latest["label"])]
         latest_tone = TONE_META[latest["tone"]]
         attack_count = int((df["label"] != 0).sum())
         attack_ratio = (attack_count / len(df)) * 100 if len(df) else 0
-        average_confidence = df["confidence_pct"].replace(0, pd.NA).dropna().mean()
-        average_confidence_text = f"{average_confidence:.1f}%" if pd.notna(average_confidence) else "-"
+        avg_confidence = df["confidence_pct"].replace(0, pd.NA).dropna().mean()
+        avg_confidence_text = f"{avg_confidence:.1f}%" if pd.notna(avg_confidence) else "-"
 
         st.markdown(
             f"""
-            <div class="hero-shell">
+            <div class="surface-card hero-card">
                 <div class="hero-grid">
                     <div>
-                        <span class="eyebrow">AEGIS · LIVE SECURITY</span>
-                        <div class="hero-title">{escape(latest_meta['headline'])}</div>
-                        <p class="hero-sub">
-                            최근 탐지 {escape(str(latest['display_time']))} · confidence {latest['confidence_pct']:.0f}% ·
-                            실시간 패킷과 예측 결과를 가장 먼저 읽히는 순서로 정리했습니다.
-                        </p>
+                        <span class="eyebrow">AEGIS · Live Security</span>
+                        <div class="hero-title">{escape(latest_meta['name'])}</div>
+                        <p class="hero-copy">최근 탐지 {escape(str(latest['display_time']))} · confidence {latest['confidence_pct']:.0f}% · 실시간 패킷과 예측 결과를 가장 먼저 읽히는 순서로 정리했습니다.</p>
                         <div class="chip-row">
                             <span class="chip"><span class="chip-dot"></span>Auto Refresh {REFRESH_SECONDS}s</span>
                             <span class="chip">누적 이벤트 {len(df):,}</span>
                             <span class="chip">공격 비중 {attack_ratio:.0f}%</span>
                         </div>
                     </div>
-                    <div class="risk-wrap">
-                        <div
-                            class="risk-ring"
-                            style="--risk:{int(latest['risk_score'])};--ring-color:{latest_tone['line']};--tone-bg:{latest_tone['bg']};--tone-fg:{latest_tone['fg']};"
-                        >
-                            <div class="risk-core">
-                                <span class="risk-number">{int(latest['risk_score'])}</span>
-                                <span class="risk-caption">Risk Score</span>
-                                <span class="risk-status">{escape(latest_meta['name'])}</span>
-                            </div>
-                        </div>
+                    <div class="status-panel">
+                        <div class="status-label">현재 상태</div>
+                        <div class="status-value">{int(latest['risk_score'])}</div>
+                        <span class="status-badge" style="background:{latest_tone['bg']};color:{latest_tone['fg']};">{escape(latest_meta['name'])}</span>
+                        <div class="status-foot">Risk Score<br/>최근 탐지 {escape(str(latest['display_time']))}</div>
                     </div>
                 </div>
             </div>
@@ -754,58 +666,58 @@ with placeholder.container():
             unsafe_allow_html=True,
         )
 
-        stat_columns = st.columns(4)
-        stat_html = [
-            build_stat_card("현재 상태", latest_meta["name"], f"최근 탐지 {latest['display_time']}"),
-            build_stat_card("누적 이벤트", f"{len(df):,}", "관제 파이프라인 총 기록 수"),
-            build_stat_card("공격 비중", f"{attack_ratio:.0f}%", f"정상 제외 {attack_count:,}건"),
-            build_stat_card("평균 신뢰도", average_confidence_text, "confidence 기준 평균"),
+        summary_cols = st.columns(4)
+        summary_cards = [
+            stat_card("현재 상태", latest_meta["name"], f"최근 탐지 {latest['display_time']}"),
+            stat_card("누적 이벤트", f"{len(df):,}", "관제 파이프라인 총 기록 수"),
+            stat_card("공격 비중", f"{attack_ratio:.0f}%", f"정상 제외 {attack_count:,}건"),
+            stat_card("평균 신뢰도", avg_confidence_text, "confidence 기준 평균"),
         ]
-        for column, card in zip(stat_columns, stat_html):
+        for column, card in zip(summary_cols, summary_cards):
             with column:
                 st.markdown(card, unsafe_allow_html=True)
 
-        top_columns = st.columns([0.95, 1.1, 0.95])
+        body_cols = st.columns([1.05, 1.05, 0.9])
 
-        with top_columns[0]:
+        with body_cols[0]:
             st.markdown(
                 f"""
-                <div class="surface-shell">
-                    <div class="section-kicker">Attack Mix</div>
+                <div class="surface-card body-card">
+                    <div class="section-label">Attack Mix</div>
                     <div class="section-title">유형별 분포</div>
-                    {build_attack_mix(df)}
+                    {attack_mix_html(df)}
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        with top_columns[1]:
+        with body_cols[1]:
             st.markdown(
                 f"""
-                <div class="surface-shell">
-                    <div class="section-kicker">Latest Snapshot</div>
+                <div class="surface-card body-card">
+                    <div class="section-label">Latest Snapshot</div>
                     <div class="section-title">실시간 특징값</div>
                     <div class="signal-grid">
-                        {build_signal_grid(latest)}
+                        {signal_grid_html(latest)}
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        with top_columns[2]:
+        with body_cols[2]:
             st.markdown(
                 f"""
-                <div class="surface-shell">
-                    <div class="section-kicker">Recent Feed</div>
+                <div class="surface-card body-card">
+                    <div class="section-label">Recent Feed</div>
                     <div class="section-title">최근 이벤트</div>
-                    {build_recent_feed(df.iloc[::-1].reset_index(drop=True))}
+                    {recent_feed_html(df.iloc[::-1].reset_index(drop=True))}
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        st.markdown(build_ledger(df), unsafe_allow_html=True)
+        st.markdown(ledger_html(df), unsafe_allow_html=True)
 
 time.sleep(REFRESH_SECONDS)
 st.rerun()
