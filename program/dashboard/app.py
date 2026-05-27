@@ -129,8 +129,8 @@ def inject_styles() -> None:
 
         .block-container {
             max-width: 1260px;
-            padding-top: 1.3rem;
-            padding-bottom: 2.6rem;
+            padding-top: 1.1rem;
+            padding-bottom: 2.4rem;
         }
 
         .topbar {
@@ -151,7 +151,7 @@ def inject_styles() -> None:
             width: 38px;
             height: 38px;
             border-radius: 14px;
-            background: linear-gradient(180deg, #4f9bff 0%, #1f6feb 100%);
+            background: #3182f6;
             color: #fff;
             display: inline-flex;
             align-items: center;
@@ -159,7 +159,7 @@ def inject_styles() -> None:
             font-size: 0.98rem;
             font-weight: 800;
             letter-spacing: -0.02em;
-            box-shadow: 0 10px 22px rgba(49, 130, 246, 0.24);
+            box-shadow: 0 6px 14px rgba(49, 130, 246, 0.16);
         }
 
         .brand-title {
@@ -171,7 +171,7 @@ def inject_styles() -> None:
         .brand-sub {
             color: var(--muted);
             font-size: 0.86rem;
-            font-weight: 600;
+            font-weight: 500;
             margin-top: 2px;
         }
 
@@ -186,12 +186,12 @@ def inject_styles() -> None:
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 14px;
+            padding: 9px 13px;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.88);
-            border: 1px solid rgba(15, 23, 42, 0.06);
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(15, 23, 42, 0.08);
             color: var(--text);
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 700;
         }
 
@@ -205,13 +205,12 @@ def inject_styles() -> None:
         .shell {
             background: var(--surface);
             border: 1px solid var(--line);
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
         }
 
         .hero {
             border-radius: var(--radius-xl);
-            padding: 28px 30px;
+            padding: 24px 28px;
             display: grid;
             grid-template-columns: minmax(0, 1fr) 290px;
             gap: 22px;
@@ -221,34 +220,30 @@ def inject_styles() -> None:
         .hero-kicker {
             display: inline-flex;
             align-items: center;
-            padding: 8px 13px;
-            border-radius: 999px;
-            background: var(--blue-soft);
-            color: var(--blue);
-            font-size: 0.76rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+            color: var(--muted);
+            font-size: 0.84rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
         }
 
         .hero-title {
-            margin: 18px 0 10px;
-            font-size: 3.8rem;
+            margin: 14px 0 8px;
+            font-size: 3.1rem;
             line-height: 0.96;
-            letter-spacing: -0.09em;
+            letter-spacing: -0.08em;
             font-weight: 800;
         }
 
         .hero-summary {
             color: var(--sub);
-            font-size: 1.02rem;
-            line-height: 1.6;
+            font-size: 0.98rem;
+            line-height: 1.55;
             font-weight: 600;
             margin: 0;
         }
 
         .hero-strip {
-            margin-top: 18px;
+            margin-top: 16px;
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
@@ -257,7 +252,7 @@ def inject_styles() -> None:
         .hero-side {
             border-radius: 24px;
             padding: 22px;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            background: #fbfcfe;
             border: 1px solid rgba(15, 23, 42, 0.06);
             display: flex;
             flex-direction: column;
@@ -355,17 +350,16 @@ def inject_styles() -> None:
 
         .section-kicker {
             color: var(--muted);
-            font-size: 0.76rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
         }
 
         .section-title {
             margin: 8px 0 0;
-            font-size: 1.82rem;
+            font-size: 1.64rem;
             line-height: 1.08;
-            letter-spacing: -0.06em;
+            letter-spacing: -0.05em;
             font-weight: 800;
             color: var(--text);
         }
@@ -373,8 +367,8 @@ def inject_styles() -> None:
         .section-copy {
             margin-top: 10px;
             color: var(--sub);
-            font-size: 0.95rem;
-            line-height: 1.6;
+            font-size: 0.92rem;
+            line-height: 1.52;
             font-weight: 600;
         }
 
@@ -382,9 +376,9 @@ def inject_styles() -> None:
             margin-top: 14px;
             padding: 22px;
             border-radius: 22px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.96));
+            background: #ffffff;
             border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
         }
 
         .detail-top {
@@ -618,7 +612,7 @@ def inject_styles() -> None:
 
         @media (max-width: 760px) {
             .hero-title {
-                font-size: 2.7rem;
+                font-size: 2.45rem;
             }
 
             .detail-grid {
@@ -719,11 +713,11 @@ def topbar_html(total_count: int) -> str:
         '<span class="brand-mark">A</span>'
         '<div>'
         '<div class="brand-title">AEGIS</div>'
-        '<div class="brand-sub">Network Security Monitor</div>'
+        '<div class="brand-sub">실시간 네트워크 관제</div>'
         "</div>"
         "</div>"
         '<div class="topbar-meta">'
-        '<span class="meta-chip"><span class="meta-dot"></span>Live Dashboard</span>'
+        '<span class="meta-chip"><span class="meta-dot"></span>실시간 반영</span>'
         f'<span class="meta-chip">데이터 {total_count:,}건</span>'
         "</div>"
         "</div>"
@@ -735,13 +729,13 @@ def hero_html(latest: pd.Series, total_count: int, attack_ratio: float) -> str:
     return (
         '<section class="shell hero">'
         '<div>'
-        '<span class="hero-kicker">AEGIS LIVE SECURITY</span>'
+        '<span class="hero-kicker">실시간 관제</span>'
         f'<div class="hero-title">{escape(str(latest["status_name"]))}</div>'
         f'<p class="hero-summary">{escape(str(latest["summary_text"]))}</p>'
         '<div class="hero-strip">'
         f'<span class="hero-pill"><span class="meta-dot"></span>자동 새로고침 {REFRESH_SECONDS}초</span>'
         f'<span class="hero-pill">마지막 감지 {escape(str(latest["display_time"]))}</span>'
-        f'<span class="hero-pill">모델 신뢰 {latest["confidence_pct"]:.0f}%</span>'
+        f'<span class="hero-pill">신뢰도 {latest["confidence_pct"]:.0f}%</span>'
         f'<span class="hero-pill">공격 비중 {attack_ratio:.0f}%</span>'
         "</div>"
         "</div>"
@@ -787,9 +781,9 @@ def overview_html(
 def history_head_html() -> str:
     return (
         '<div class="shell section-head">'
-        '<div class="section-kicker">Detection History</div>'
+        '<div class="section-kicker">최근 기록</div>'
         '<div class="section-title">최근 탐지 내역</div>'
-        '<div class="section-copy">스크롤로 목록을 확인하고, 행을 클릭하면 바로 아래에 세부 내역이 열립니다.</div>'
+        '<div class="section-copy">목록을 스크롤해서 확인하고, 필요한 행만 눌러 세부 값을 확인할 수 있습니다.</div>'
         "</div>"
     )
 
@@ -878,9 +872,9 @@ def attack_mix_html(df: pd.DataFrame) -> str:
         )
     return (
         '<section class="shell section-shell">'
-        '<div class="section-kicker">Traffic Pattern</div>'
+        '<div class="section-kicker">누적 분포</div>'
         '<div class="section-title">유형별 분포</div>'
-        '<div class="section-copy">누적 기록 기준으로 어떤 공격 유형이 많이 등장했는지 빠르게 읽을 수 있습니다.</div>'
+        '<div class="section-copy">최근 누적 기준으로 어떤 유형이 많이 나타났는지 정리했습니다.</div>'
         f'<div class="mix-list">{"".join(rows)}</div>'
         "</section>"
     )
@@ -905,9 +899,9 @@ def signal_panel_html(
         )
     return (
         '<section class="shell section-shell">'
-        '<div class="section-kicker">Live Snapshot</div>'
+        '<div class="section-kicker">실시간 집계</div>'
         '<div class="section-title">실시간 특징값</div>'
-        '<div class="section-copy">패킷 수, DNS 질의, SSH 실패, 포트 다양성을 리스트 행으로 정리했습니다.</div>'
+        '<div class="section-copy">패킷 수와 핵심 징후만 바로 읽을 수 있게 정리했습니다.</div>'
         f'<div class="signal-list">{"".join(signal_rows)}</div>'
         '<div class="insight-box">'
         '<div class="insight-row"><div class="insight-key">현재 판정</div>'
