@@ -2,6 +2,7 @@ import json
 import os
 import time
 from datetime import datetime
+from html import escape
 
 import pandas as pd
 import streamlit as st
@@ -11,26 +12,33 @@ LOG_FILE = "live_dashboard.json"
 REFRESH_SECONDS = 2
 
 LABEL_META = {
-    0: {"name": "Normal", "badge": "정상", "tone": "safe", "risk": 8},
-    1: {"name": "ICMP Flood", "badge": "ICMP Flood", "tone": "danger", "risk": 90},
-    2: {"name": "Port Scan", "badge": "Port Scan", "tone": "warn", "risk": 72},
-    3: {"name": "SSH Brute Force", "badge": "SSH Brute Force", "tone": "danger", "risk": 84},
-    4: {"name": "ARP Spoofing", "badge": "ARP Spoofing", "tone": "danger", "risk": 88},
-    5: {"name": "DNS Anomaly", "badge": "DNS Anomaly", "tone": "warn", "risk": 68},
+    0: {"name": "정상", "headline": "정상 흐름 유지", "tone": "safe", "risk": 8},
+    1: {"name": "ICMP Flood", "headline": "ICMP Flood 감지", "tone": "danger", "risk": 92},
+    2: {"name": "Port Scan", "headline": "Port Scan 감지", "tone": "warn", "risk": 74},
+    3: {"name": "SSH Brute Force", "headline": "SSH Brute Force 감지", "tone": "danger", "risk": 86},
+    4: {"name": "ARP Spoofing", "headline": "ARP Spoofing 감지", "tone": "danger", "risk": 90},
+    5: {"name": "DNS Anomaly", "headline": "DNS Anomaly 감지", "tone": "warn", "risk": 68},
 }
 
-TONE_COLORS = {
-    "safe": {"bg": "#ECFDF3", "fg": "#027A48", "chip": "#D1FADF"},
-    "warn": {"bg": "#FFFAEB", "fg": "#B54708", "chip": "#FEE4A6"},
-    "danger": {"bg": "#FEF3F2", "fg": "#B42318", "chip": "#FECDCA"},
+TONE_META = {
+    "safe": {"bg": "#ecfdf3", "fg": "#027a48", "line": "#12b76a", "soft": "#d1fadf"},
+    "warn": {"bg": "#fff7ed", "fg": "#c2410c", "line": "#f97316", "soft": "#fed7aa"},
+    "danger": {"bg": "#fef2f2", "fg": "#b42318", "line": "#ef4444", "soft": "#fecaca"},
 }
 
+SIGNAL_LABELS = [
+    ("total_pkt_cnt", "전체 패킷"),
+    ("tcp_cnt", "TCP"),
+    ("udp_cnt", "UDP"),
+    ("icmp_cnt", "ICMP"),
+    ("dns_query_cnt", "DNS 질의"),
+    ("failed_login_cnt", "SSH 실패"),
+    ("unique_dst_port_cnt", "대상 포트"),
+    ("unique_src_ip_cnt", "출발지 IP"),
+]
 
-st.set_page_config(
-    page_title="AEGIS Security Center",
-    page_icon="🛡️",
-    layout="wide",
-)
+
+st.set_page_config(page_title="AEGIS", page_icon="A", layout="wide")
 
 
 def inject_styles() -> None:
@@ -40,25 +48,26 @@ def inject_styles() -> None:
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
 
         :root {
-            --bg: #f5f7fb;
-            --surface: rgba(255, 255, 255, 0.86);
-            --surface-strong: #ffffff;
-            --stroke: rgba(15, 23, 42, 0.08);
-            --text: #0f172a;
-            --muted: #667085;
-            --blue: #1677ff;
-            --blue-soft: #e8f1ff;
-            --shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
-            --radius-xl: 30px;
-            --radius-lg: 24px;
-            --radius-md: 18px;
+            --bg: #f4f7fb;
+            --surface: rgba(255, 255, 255, 0.90);
+            --surface-solid: #ffffff;
+            --text: #111827;
+            --muted: #6b7280;
+            --blue: #0064ff;
+            --blue-soft: #eaf2ff;
+            --stroke: rgba(17, 24, 39, 0.08);
+            --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+            --radius-hero: 32px;
+            --radius-card: 26px;
+            --radius-mini: 20px;
         }
 
         .stApp {
             background:
-                radial-gradient(circle at top left, rgba(22, 119, 255, 0.10), transparent 26%),
-                radial-gradient(circle at top right, rgba(125, 211, 252, 0.18), transparent 24%),
-                linear-gradient(180deg, #fbfcff 0%, var(--bg) 54%, #eef3fb 100%);
+                radial-gradient(circle at top left, rgba(0, 100, 255, 0.10), transparent 24%),
+                radial-gradient(circle at top right, rgba(125, 211, 252, 0.18), transparent 26%),
+                linear-gradient(180deg, #f8fbff 0%, var(--bg) 52%, #eef3fa 100%);
+            color: var(--text);
         }
 
         html, body, [class*="css"] {
@@ -67,91 +76,88 @@ def inject_styles() -> None:
         }
 
         .block-container {
-            padding-top: 2.2rem;
-            padding-bottom: 2.5rem;
             max-width: 1380px;
+            padding-top: 1.6rem;
+            padding-bottom: 2.4rem;
         }
 
         [data-testid="stHeader"] {
-            background: rgba(255, 255, 255, 0);
-        }
-
-        [data-testid="stMetric"] {
             background: transparent;
         }
 
-        div[data-testid="stMetric"] {
-            padding: 0 !important;
+        [data-testid="stToolbar"] {
+            right: 1rem;
         }
 
-        [data-testid="stDataFrame"] {
-            border-radius: 22px;
-            overflow: hidden;
-            border: 1px solid var(--stroke);
-            box-shadow: var(--shadow);
-            background: var(--surface-strong);
-        }
-
-        .hero-card, .surface-card {
+        .hero-shell,
+        .surface-shell {
             background: var(--surface);
             backdrop-filter: blur(22px);
             border: 1px solid var(--stroke);
             box-shadow: var(--shadow);
-            border-radius: var(--radius-xl);
         }
 
-        .hero-card {
-            padding: 32px 34px;
+        .hero-shell {
+            border-radius: var(--radius-hero);
+            padding: 34px 34px 30px 34px;
             margin-bottom: 20px;
             position: relative;
             overflow: hidden;
         }
 
-        .hero-card::after {
+        .hero-shell::after {
             content: "";
             position: absolute;
-            inset: auto -80px -80px auto;
-            width: 260px;
-            height: 260px;
+            right: -40px;
+            bottom: -40px;
+            width: 220px;
+            height: 220px;
             border-radius: 999px;
-            background: radial-gradient(circle, rgba(22, 119, 255, 0.18), rgba(22, 119, 255, 0));
+            background: radial-gradient(circle, rgba(0, 100, 255, 0.14), rgba(0, 100, 255, 0));
         }
 
-        .surface-card {
-            padding: 24px 24px 22px 24px;
-            height: 100%;
+        .hero-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) 260px;
+            gap: 24px;
+            align-items: center;
         }
 
         .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--blue-soft);
             color: var(--blue);
-            font-size: 0.82rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            margin-bottom: 12px;
         }
 
         .hero-title {
-            font-size: 2.35rem;
-            line-height: 1.1;
+            margin: 18px 0 10px 0;
+            font-size: 3.4rem;
+            line-height: 0.98;
+            letter-spacing: -0.06em;
             font-weight: 800;
-            letter-spacing: -0.04em;
-            margin: 0;
             color: var(--text);
         }
 
-        .hero-copy {
-            margin-top: 12px;
-            max-width: 760px;
+        .hero-sub {
+            margin: 0;
             color: var(--muted);
-            font-size: 1.02rem;
-            line-height: 1.72;
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1.65;
         }
 
-        .hero-meta-row {
+        .chip-row {
             display: flex;
-            gap: 12px;
             flex-wrap: wrap;
+            gap: 10px;
             margin-top: 22px;
         }
 
@@ -161,142 +167,330 @@ def inject_styles() -> None:
             gap: 8px;
             padding: 10px 14px;
             border-radius: 999px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(17, 24, 39, 0.06);
+            color: #1f2937;
             font-size: 0.92rem;
             font-weight: 600;
-            border: 1px solid rgba(15, 23, 42, 0.05);
-            background: #ffffff;
-            color: #101828;
         }
 
-        .chip .dot {
+        .chip-dot {
             width: 8px;
             height: 8px;
             border-radius: 999px;
             background: var(--blue);
         }
 
-        .metric-card {
-            background: rgba(255, 255, 255, 0.84);
-            border: 1px solid var(--stroke);
-            box-shadow: var(--shadow);
-            border-radius: var(--radius-lg);
-            padding: 22px 22px 18px 22px;
-            min-height: 146px;
+        .risk-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .metric-label {
+        .risk-ring {
+            width: 210px;
+            height: 210px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            background: conic-gradient(var(--ring-color) calc(var(--risk) * 1%), rgba(17, 24, 39, 0.08) 0);
+            position: relative;
+        }
+
+        .risk-ring::before {
+            content: "";
+            position: absolute;
+            inset: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 999px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+
+        .risk-core {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .risk-number {
+            display: block;
+            font-size: 3rem;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: -0.06em;
+            color: var(--text);
+        }
+
+        .risk-caption {
+            margin-top: 8px;
+            display: block;
             color: var(--muted);
             font-size: 0.92rem;
-            font-weight: 600;
-            margin-bottom: 18px;
+            font-weight: 700;
         }
 
-        .metric-value {
-            font-size: 2rem;
+        .risk-status {
+            margin-top: 10px;
+            display: inline-flex;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 0.86rem;
             font-weight: 800;
-            letter-spacing: -0.04em;
-            color: var(--text);
-            line-height: 1.05;
+            background: var(--tone-bg);
+            color: var(--tone-fg);
         }
 
-        .metric-sub {
-            margin-top: 12px;
+        .stat-card,
+        .surface-shell {
+            border-radius: var(--radius-card);
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.88);
+            border: 1px solid var(--stroke);
+            box-shadow: var(--shadow);
+            padding: 22px 22px 20px 22px;
+            min-height: 138px;
+        }
+
+        .stat-label {
             color: var(--muted);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .stat-value {
+            color: var(--text);
+            font-size: 2.2rem;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+        }
+
+        .stat-foot {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 0.94rem;
             line-height: 1.55;
         }
 
-        .section-title {
-            font-size: 1.15rem;
-            font-weight: 750;
-            letter-spacing: -0.02em;
-            color: var(--text);
-            margin-bottom: 8px;
+        .surface-shell {
+            padding: 24px;
+            height: 100%;
         }
 
-        .section-copy {
+        .section-kicker {
             color: var(--muted);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 18px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
-        .event-item {
-            padding: 16px 0;
-            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        .section-title {
+            margin: 8px 0 18px 0;
+            font-size: 1.35rem;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+            font-weight: 800;
+            color: var(--text);
         }
 
-        .event-item:last-child {
-            border-bottom: 0;
-            padding-bottom: 2px;
+        .mix-row {
+            margin-bottom: 16px;
         }
 
-        .event-top {
+        .mix-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .mix-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.96rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .mix-track {
+            width: 100%;
+            height: 11px;
+            border-radius: 999px;
+            background: rgba(17, 24, 39, 0.06);
+            overflow: hidden;
+        }
+
+        .mix-fill {
+            height: 100%;
+            border-radius: 999px;
+        }
+
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .signal-box {
+            padding: 18px 18px 16px 18px;
+            border-radius: var(--radius-mini);
+            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,247,251,0.96));
+            border: 1px solid rgba(17, 24, 39, 0.06);
+        }
+
+        .signal-label {
+            color: var(--muted);
+            font-size: 0.88rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .signal-value {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.05em;
+            color: var(--text);
+        }
+
+        .feed-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            margin-bottom: 8px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(17, 24, 39, 0.06);
         }
 
-        .event-name {
-            font-weight: 700;
+        .feed-item:first-child {
+            padding-top: 0;
+        }
+
+        .feed-item:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .feed-name {
             color: var(--text);
-            font-size: 0.98rem;
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.2;
         }
 
-        .event-meta {
+        .feed-meta {
+            margin-top: 6px;
             color: var(--muted);
             font-size: 0.9rem;
-            line-height: 1.6;
+            font-weight: 600;
         }
 
-        .pill {
+        .feed-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 72px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.84rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .ledger-shell {
+            margin-top: 20px;
+        }
+
+        .ledger-table-wrap {
+            overflow-x: auto;
+            border-radius: 22px;
+            border: 1px solid rgba(17, 24, 39, 0.07);
+            background: rgba(255,255,255,0.92);
+        }
+
+        table.ledger-table {
+            width: 100%;
+            min-width: 920px;
+            border-collapse: collapse;
+        }
+
+        .ledger-table thead th {
+            position: sticky;
+            top: 0;
+            padding: 16px 18px;
+            text-align: left;
+            font-size: 0.84rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #6b7280;
+            background: rgba(248, 250, 252, 0.96);
+            border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        }
+
+        .ledger-table tbody td {
+            padding: 16px 18px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1f2937;
+            border-bottom: 1px solid rgba(17, 24, 39, 0.06);
+        }
+
+        .ledger-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .ledger-table tbody tr:hover td {
+            background: rgba(0, 100, 255, 0.03);
+        }
+
+        .ledger-badge {
             display: inline-flex;
             align-items: center;
             padding: 7px 11px;
             border-radius: 999px;
             font-size: 0.82rem;
-            font-weight: 700;
-            letter-spacing: -0.01em;
-            white-space: nowrap;
+            font-weight: 800;
         }
 
-        .empty-state {
-            padding: 64px 30px;
+        .empty-shell {
+            padding: 70px 32px;
             text-align: center;
-            border-radius: var(--radius-xl);
-            background: rgba(255, 255, 255, 0.82);
-            border: 1px dashed rgba(15, 23, 42, 0.14);
-            color: var(--muted);
+            border-radius: var(--radius-hero);
+            background: rgba(255,255,255,0.86);
+            border: 1px dashed rgba(17,24,39,0.12);
             box-shadow: var(--shadow);
         }
 
-        .empty-state h3 {
-            margin: 0 0 12px 0;
+        .empty-title {
             color: var(--text);
-            font-size: 1.4rem;
-            letter-spacing: -0.03em;
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 10px;
         }
 
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.70);
-            border-radius: 16px;
-            padding: 6px;
-            border: 1px solid var(--stroke);
+        .empty-copy {
+            color: var(--muted);
+            font-size: 1rem;
+            font-weight: 600;
         }
 
-        .stTabs [data-baseweb="tab"] {
-            height: 44px;
-            border-radius: 12px;
-            padding: 0 18px;
-            font-weight: 700;
-        }
+        @media (max-width: 1100px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+            }
 
-        .stTabs [aria-selected="true"] {
-            background: white !important;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            .hero-title {
+                font-size: 2.7rem;
+            }
+
+            .risk-wrap {
+                justify-content: flex-start;
+            }
         }
         </style>
         """,
@@ -313,53 +507,6 @@ def load_data() -> pd.DataFrame:
                 if line:
                     records.append(json.loads(line))
     return pd.DataFrame(records)
-
-
-def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return df
-
-    normalized = df.copy()
-    numeric_columns = [
-        "label",
-        "confidence",
-        "total_pkt_cnt",
-        "tcp_cnt",
-        "udp_cnt",
-        "icmp_cnt",
-        "syn_cnt",
-        "ack_cnt",
-        "unique_dst_port_cnt",
-        "unique_src_ip_cnt",
-        "dns_query_cnt",
-        "gratuitous_arp_cnt",
-        "failed_login_cnt",
-        "mac_change_cnt",
-    ]
-    for column in numeric_columns:
-        if column in normalized.columns:
-            normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
-
-    if "label" not in normalized.columns:
-        normalized["label"] = 0
-
-    normalized["label"] = normalized["label"].fillna(0).astype(int)
-    normalized["confidence"] = normalized.get("confidence", pd.Series([None] * len(normalized))).fillna(0)
-    normalized["label_name"] = normalized["label"].map(
-        lambda value: LABEL_META.get(value, LABEL_META[0])["name"]
-    )
-    normalized["badge_name"] = normalized["label"].map(
-        lambda value: LABEL_META.get(value, LABEL_META[0])["badge"]
-    )
-    normalized["risk_score"] = normalized["label"].map(
-        lambda value: LABEL_META.get(value, LABEL_META[0])["risk"]
-    )
-    normalized["tone"] = normalized["label"].map(
-        lambda value: LABEL_META.get(value, LABEL_META[0])["tone"]
-    )
-    normalized["display_time"] = normalized["timestamp"].map(format_timestamp)
-    normalized["confidence_pct"] = (normalized["confidence"] * 100).round(1)
-    return normalized
 
 
 def format_timestamp(raw_value) -> str:
@@ -379,91 +526,171 @@ def format_timestamp(raw_value) -> str:
         return str(raw_value)
 
 
-def render_metric_card(title: str, value: str, subtext: str) -> None:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">{title}</div>
-            <div class="metric-value">{value}</div>
-            <div class="metric-sub">{subtext}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+def normalize_data(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+
+    normalized = df.copy()
+    numeric_columns = [
+        "label",
+        "confidence",
+        "total_pkt_cnt",
+        "tcp_cnt",
+        "udp_cnt",
+        "icmp_cnt",
+        "dns_query_cnt",
+        "failed_login_cnt",
+        "unique_dst_port_cnt",
+        "unique_src_ip_cnt",
+    ]
+    for column in numeric_columns:
+        if column in normalized.columns:
+            normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
+
+    normalized["label"] = normalized.get("label", 0).fillna(0).astype(int)
+    normalized["confidence"] = normalized.get("confidence", 0).fillna(0).astype(float)
+    normalized["display_time"] = normalized["timestamp"].map(format_timestamp)
+    normalized["status_name"] = normalized["label"].map(
+        lambda value: LABEL_META.get(value, LABEL_META[0])["name"]
     )
-
-
-def render_badge(label: int) -> str:
-    meta = LABEL_META.get(label, LABEL_META[0])
-    colors = TONE_COLORS[meta["tone"]]
-    return (
-        f"<span class='pill' style='background:{colors['bg']};color:{colors['fg']};"
-        f"border:1px solid {colors['chip']};'>{meta['badge']}</span>"
+    normalized["headline"] = normalized["label"].map(
+        lambda value: LABEL_META.get(value, LABEL_META[0])["headline"]
     )
-
-
-def render_event_feed(df: pd.DataFrame) -> None:
-    st.markdown('<div class="section-title">Recent Security Events</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-copy">가장 최근에 기록된 탐지 결과를 빠르게 훑어보고, 어떤 공격이 우세한지 즉시 파악할 수 있도록 구성했습니다.</div>',
-        unsafe_allow_html=True,
+    normalized["tone"] = normalized["label"].map(
+        lambda value: LABEL_META.get(value, LABEL_META[0])["tone"]
     )
+    normalized["risk_score"] = normalized["label"].map(
+        lambda value: LABEL_META.get(value, LABEL_META[0])["risk"]
+    )
+    normalized["confidence_pct"] = (normalized["confidence"] * 100).round(1)
+    return normalized
 
-    for _, row in df.head(8).iterrows():
-        confidence_text = f"{row['confidence_pct']:.1f}%" if row["confidence"] else "N/A"
-        st.markdown(
+
+def build_stat_card(title: str, value: str, foot: str) -> str:
+    return f"""
+    <div class="stat-card">
+        <div class="stat-label">{escape(title)}</div>
+        <div class="stat-value">{escape(value)}</div>
+        <div class="stat-foot">{escape(foot)}</div>
+    </div>
+    """
+
+
+def build_attack_mix(df: pd.DataFrame) -> str:
+    counts = df["label"].value_counts().to_dict()
+    max_count = max(counts.values()) if counts else 1
+    ordered_labels = [1, 3, 4, 2, 5, 0]
+    rows = []
+    for label in ordered_labels:
+        meta = LABEL_META[label]
+        tone = TONE_META[meta["tone"]]
+        count = counts.get(label, 0)
+        width = 0 if max_count == 0 else max(10, int((count / max_count) * 100)) if count else 0
+        rows.append(
             f"""
-            <div class="event-item">
-                <div class="event-top">
-                    <div class="event-name">{row['label_name']}</div>
-                    {render_badge(int(row['label']))}
+            <div class="mix-row">
+                <div class="mix-head">
+                    <span>{escape(meta['name'])}</span>
+                    <span>{count}</span>
                 </div>
-                <div class="event-meta">
-                    Time {row['display_time']}<br/>
-                    Confidence {confidence_text} · Risk Score {int(row['risk_score'])}
+                <div class="mix-track">
+                    <div class="mix-fill" style="width:{width}%;background:{tone['line']};"></div>
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
+        )
+    return "".join(rows)
+
+
+def build_signal_grid(latest_row: pd.Series) -> str:
+    cards = []
+    for column, label in SIGNAL_LABELS:
+        value = int(latest_row.get(column, 0) or 0)
+        cards.append(
+            f"""
+            <div class="signal-box">
+                <div class="signal-label">{escape(label)}</div>
+                <div class="signal-value">{value:,}</div>
+            </div>
+            """
+        )
+    return "".join(cards)
+
+
+def build_recent_feed(df: pd.DataFrame) -> str:
+    rows = []
+    for _, row in df.head(6).iterrows():
+        tone = TONE_META[row["tone"]]
+        confidence = f"{row['confidence_pct']:.0f}%" if row["confidence_pct"] else "-"
+        rows.append(
+            f"""
+            <div class="feed-item">
+                <div>
+                    <div class="feed-name">{escape(str(row['status_name']))}</div>
+                    <div class="feed-meta">{escape(str(row['display_time']))} · confidence {confidence}</div>
+                </div>
+                <span class="feed-pill" style="background:{tone['bg']};color:{tone['fg']};">
+                    {int(row['risk_score'])}
+                </span>
+            </div>
+            """
+        )
+    return "".join(rows)
+
+
+def build_ledger(df: pd.DataFrame) -> str:
+    latest_rows = df.iloc[::-1].head(10).copy()
+    table_rows = []
+    for _, row in latest_rows.iterrows():
+        tone = TONE_META[row["tone"]]
+        table_rows.append(
+            f"""
+            <tr>
+                <td>{escape(str(row['display_time']))}</td>
+                <td>
+                    <span class="ledger-badge" style="background:{tone['bg']};color:{tone['fg']};">
+                        {escape(str(row['status_name']))}
+                    </span>
+                </td>
+                <td>{row['confidence_pct']:.0f}%</td>
+                <td>{int(row['risk_score'])}</td>
+                <td>{int(row.get('total_pkt_cnt', 0) or 0):,}</td>
+                <td>{int(row.get('tcp_cnt', 0) or 0):,}</td>
+                <td>{int(row.get('udp_cnt', 0) or 0):,}</td>
+                <td>{int(row.get('icmp_cnt', 0) or 0):,}</td>
+                <td>{int(row.get('dns_query_cnt', 0) or 0):,}</td>
+                <td>{int(row.get('failed_login_cnt', 0) or 0):,}</td>
+            </tr>
+            """
         )
 
-
-def build_display_table(df: pd.DataFrame) -> pd.DataFrame:
-    table = df.copy()
-    table["상태"] = table["badge_name"]
-    table["시간"] = table["display_time"]
-    table["신뢰도(%)"] = table["confidence_pct"]
-    table["위험도"] = table["risk_score"]
-
-    column_map = {
-        "total_pkt_cnt": "전체 패킷",
-        "tcp_cnt": "TCP",
-        "udp_cnt": "UDP",
-        "icmp_cnt": "ICMP",
-        "failed_login_cnt": "SSH 실패",
-        "dns_query_cnt": "DNS 질의",
-        "unique_dst_port_cnt": "대상 포트 수",
-        "unique_src_ip_cnt": "출발지 IP 수",
-    }
-    for original, renamed in column_map.items():
-        if original in table.columns:
-            table[renamed] = table[original]
-
-    preferred_columns = [
-        "시간",
-        "상태",
-        "신뢰도(%)",
-        "위험도",
-        "전체 패킷",
-        "TCP",
-        "UDP",
-        "ICMP",
-        "SSH 실패",
-        "DNS 질의",
-        "대상 포트 수",
-        "출발지 IP 수",
-    ]
-    available_columns = [column for column in preferred_columns if column in table.columns]
-    return table[available_columns].head(12)
+    return f"""
+    <div class="surface-shell ledger-shell">
+        <div class="section-kicker">Ledger</div>
+        <div class="section-title">최근 이벤트 로그</div>
+        <div class="ledger-table-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>시간</th>
+                        <th>유형</th>
+                        <th>신뢰도</th>
+                        <th>리스크</th>
+                        <th>패킷</th>
+                        <th>TCP</th>
+                        <th>UDP</th>
+                        <th>ICMP</th>
+                        <th>DNS</th>
+                        <th>SSH</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {''.join(table_rows)}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    """
 
 
 inject_styles()
@@ -471,139 +698,114 @@ inject_styles()
 placeholder = st.empty()
 
 with placeholder.container():
-    raw_df = load_data()
-    df = normalize_data(raw_df)
+    df = normalize_data(load_data())
 
     if df.empty:
         st.markdown(
             """
-            <div class="empty-state">
-                <h3>AEGIS is waiting for live traffic</h3>
-                <p>Extractor, predictor, monitor가 순서대로 실행되면 이 화면이 실시간 보안 관제 센터로 바뀝니다.</p>
+            <div class="empty-shell">
+                <div class="empty-title">라이브 데이터 대기 중</div>
+                <div class="empty-copy">Extractor, predictor, monitor가 순서대로 실행되면 이 화면이 즉시 채워집니다.</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
     else:
         latest = df.iloc[-1]
+        latest_meta = LABEL_META.get(int(latest["label"]), LABEL_META[0])
+        latest_tone = TONE_META[latest["tone"]]
         attack_count = int((df["label"] != 0).sum())
         attack_ratio = (attack_count / len(df)) * 100 if len(df) else 0
         average_confidence = df["confidence_pct"].replace(0, pd.NA).dropna().mean()
-        average_confidence_text = f"{average_confidence:.1f}%" if pd.notna(average_confidence) else "N/A"
-        latest_badge = render_badge(int(latest["label"]))
+        average_confidence_text = f"{average_confidence:.1f}%" if pd.notna(average_confidence) else "-"
 
         st.markdown(
             f"""
-            <div class="hero-card">
-                <div class="eyebrow">AEGIS Security Center</div>
-                <h1 class="hero-title">네트워크 공격 흐름을<br/>한 화면에서 부드럽고 선명하게</h1>
-                <div class="hero-copy">
-                    실시간 패킷 특징값, AI 예측 결과, 위험 흐름을 하나의 관제 표면으로 정리했습니다.
-                    과하게 장식하지 않고, 중요한 신호만 빠르게 읽히도록 톤을 정교하게 맞췄습니다.
-                </div>
-                <div class="hero-meta-row">
-                    <span class="chip"><span class="dot"></span>Auto Refresh {REFRESH_SECONDS}s</span>
-                    <span class="chip">Latest {latest['display_time']}</span>
-                    <span class="chip">Current Status {LABEL_META.get(int(latest['label']), LABEL_META[0])['name']}</span>
+            <div class="hero-shell">
+                <div class="hero-grid">
+                    <div>
+                        <span class="eyebrow">AEGIS · LIVE SECURITY</span>
+                        <div class="hero-title">{escape(latest_meta['headline'])}</div>
+                        <p class="hero-sub">
+                            최근 탐지 {escape(str(latest['display_time']))} · confidence {latest['confidence_pct']:.0f}% ·
+                            실시간 패킷과 예측 결과를 가장 먼저 읽히는 순서로 정리했습니다.
+                        </p>
+                        <div class="chip-row">
+                            <span class="chip"><span class="chip-dot"></span>Auto Refresh {REFRESH_SECONDS}s</span>
+                            <span class="chip">누적 이벤트 {len(df):,}</span>
+                            <span class="chip">공격 비중 {attack_ratio:.0f}%</span>
+                        </div>
+                    </div>
+                    <div class="risk-wrap">
+                        <div
+                            class="risk-ring"
+                            style="--risk:{int(latest['risk_score'])};--ring-color:{latest_tone['line']};--tone-bg:{latest_tone['bg']};--tone-fg:{latest_tone['fg']};"
+                        >
+                            <div class="risk-core">
+                                <span class="risk-number">{int(latest['risk_score'])}</span>
+                                <span class="risk-caption">Risk Score</span>
+                                <span class="risk-status">{escape(latest_meta['name'])}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        metric_cols = st.columns(4)
-        with metric_cols[0]:
-            render_metric_card(
-                "총 누적 이벤트",
-                f"{len(df):,}",
-                "현재까지 관제 파이프라인에 기록된 전체 이벤트 수",
-            )
-        with metric_cols[1]:
-            render_metric_card(
-                "실시간 상태",
-                LABEL_META.get(int(latest["label"]), LABEL_META[0])["badge"],
-                f"최근 감지 시각 {latest['display_time']}",
-            )
-        with metric_cols[2]:
-            render_metric_card(
-                "공격 비중",
-                f"{attack_ratio:.0f}%",
-                f"정상 제외 {attack_count:,}건이 공격 또는 이상 이벤트",
-            )
-        with metric_cols[3]:
-            render_metric_card(
-                "평균 신뢰도",
-                average_confidence_text,
-                "모델 confidence가 있는 이벤트 기준 평균값",
-            )
+        stat_columns = st.columns(4)
+        stat_html = [
+            build_stat_card("현재 상태", latest_meta["name"], f"최근 탐지 {latest['display_time']}"),
+            build_stat_card("누적 이벤트", f"{len(df):,}", "관제 파이프라인 총 기록 수"),
+            build_stat_card("공격 비중", f"{attack_ratio:.0f}%", f"정상 제외 {attack_count:,}건"),
+            build_stat_card("평균 신뢰도", average_confidence_text, "confidence 기준 평균"),
+        ]
+        for column, card in zip(stat_columns, stat_html):
+            with column:
+                st.markdown(card, unsafe_allow_html=True)
 
-        st.write("")
+        top_columns = st.columns([0.95, 1.1, 0.95])
 
-        overview_col, feed_col = st.columns([1.35, 0.85])
-
-        with overview_col:
-            st.markdown('<div class="surface-card">', unsafe_allow_html=True)
-            st.markdown('<div class="section-title">Live Overview</div>', unsafe_allow_html=True)
+        with top_columns[0]:
             st.markdown(
-                '<div class="section-copy">최근 30개 이벤트의 위험 흐름과 공격 유형 분포를 같이 보여줘서, 순간 스파이크와 반복 패턴을 동시에 읽을 수 있습니다.</div>',
+                f"""
+                <div class="surface-shell">
+                    <div class="section-kicker">Attack Mix</div>
+                    <div class="section-title">유형별 분포</div>
+                    {build_attack_mix(df)}
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
 
-            risk_trend = df[["display_time", "risk_score"]].tail(30).set_index("display_time")
-            st.line_chart(risk_trend, height=260, color="#1677FF")
-
-            distribution = (
-                df["badge_name"]
-                .value_counts()
-                .rename_axis("attack")
-                .reset_index(name="count")
-                .set_index("attack")
-            )
-            st.bar_chart(distribution, height=220, color="#3B82F6")
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        with feed_col:
-            st.markdown('<div class="surface-card">', unsafe_allow_html=True)
-            render_event_feed(df.iloc[::-1].reset_index(drop=True))
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        st.write("")
-
-        tabs = st.tabs(["Event Table", "Traffic Snapshot"])
-
-        with tabs[0]:
-            st.markdown('<div class="surface-card">', unsafe_allow_html=True)
-            st.markdown('<div class="section-title">Detailed Event Table</div>', unsafe_allow_html=True)
+        with top_columns[1]:
             st.markdown(
-                '<div class="section-copy">최근 이벤트를 실무적으로 바로 읽을 수 있게 컬럼을 정리했습니다. 숫자는 빠르게 비교되고, 상태는 배지로 구분됩니다.</div>',
+                f"""
+                <div class="surface-shell">
+                    <div class="section-kicker">Latest Snapshot</div>
+                    <div class="section-title">실시간 특징값</div>
+                    <div class="signal-grid">
+                        {build_signal_grid(latest)}
+                    </div>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
-            display_table = build_display_table(df.iloc[::-1].reset_index(drop=True))
-            st.dataframe(display_table, use_container_width=True, hide_index=True)
-            st.markdown("</div>", unsafe_allow_html=True)
 
-        with tabs[1]:
-            st.markdown('<div class="surface-card">', unsafe_allow_html=True)
-            st.markdown('<div class="section-title">Latest Traffic Snapshot</div>', unsafe_allow_html=True)
+        with top_columns[2]:
             st.markdown(
-                '<div class="section-copy">가장 최근 이벤트의 네트워크 특징값을 카드형으로 보여줘서, 지금 어떤 신호가 커졌는지 바로 읽히게 만들었습니다.</div>',
+                f"""
+                <div class="surface-shell">
+                    <div class="section-kicker">Recent Feed</div>
+                    <div class="section-title">최근 이벤트</div>
+                    {build_recent_feed(df.iloc[::-1].reset_index(drop=True))}
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
-            snapshot_cols = st.columns(4)
-            snapshot_pairs = [
-                ("전체 패킷", int(latest.get("total_pkt_cnt", 0))),
-                ("TCP", int(latest.get("tcp_cnt", 0))),
-                ("UDP", int(latest.get("udp_cnt", 0))),
-                ("ICMP", int(latest.get("icmp_cnt", 0))),
-                ("DNS 질의", int(latest.get("dns_query_cnt", 0))),
-                ("SSH 실패", int(latest.get("failed_login_cnt", 0))),
-                ("대상 포트 수", int(latest.get("unique_dst_port_cnt", 0))),
-                ("출발지 IP 수", int(latest.get("unique_src_ip_cnt", 0))),
-            ]
-            for column, (title, value) in zip(snapshot_cols * 2, snapshot_pairs):
-                with column:
-                    render_metric_card(title, f"{value:,}", "latest event snapshot")
-            st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown(build_ledger(df), unsafe_allow_html=True)
 
 time.sleep(REFRESH_SECONDS)
 st.rerun()
