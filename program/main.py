@@ -1,4 +1,5 @@
 import signal
+import shutil
 import subprocess
 import sys
 import time
@@ -36,13 +37,17 @@ def reset_runtime_files() -> None:
     if not existing_files:
         return
 
-    run_archive_dir = ARCHIVE_DIR / datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_archive_dir = ARCHIVE_DIR / run_stamp
     run_archive_dir.mkdir(parents=True, exist_ok=True)
 
     for file_path in existing_files:
         archived_path = run_archive_dir / file_path.name
-        file_path.replace(archived_path)
-        print(f"[*] 기존 파일 백업: {archived_path}")
+        previous_path = COLLECTED_DATA_DIR / f"previous_{run_stamp}_{file_path.name}"
+        shutil.copy2(file_path, archived_path)
+        shutil.copy2(file_path, previous_path)
+        file_path.unlink()
+        print(f"[*] 기존 파일 보관: {previous_path}")
 
 
 def start_process(name: str, command: list[str]) -> subprocess.Popen:
