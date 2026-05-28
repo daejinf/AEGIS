@@ -120,10 +120,11 @@ def main():
         [python_cmd, str(MONITOR)],
     )
 
-    # 4. Streamlit Dashboard
+    # 4. Dashboard launcher
+    # dashboard.py internally runs streamlit with the product dashboard app.
     start_process(
         "Dashboard",
-        [python_cmd, "-m", "streamlit", "run", str(DASHBOARD)],
+        [python_cmd, str(DASHBOARD)],
     )
 
     print("\n=========================================")
