@@ -4,17 +4,20 @@ from collections import defaultdict
 import threading
 import csv
 import os
+from pathlib import Path
 
 # ---------------------------------------------------------
-# 1. 초기 환경 설정 (Configuration)
+# 1. 초기 환경 설정
 # ---------------------------------------------------------
-# 리눅스 시스템의 SSH 접속 시도 로그가 저장되는 기본 경로 (Ubuntu/Debian 기준)
 AUTH_LOG_PATH = "/var/log/auth.log"
 
-# 특징 추출기가 데이터를 모아서 던져줄 중간 파일 (Predictor가 이걸 읽어감)
-FEATURE_OUT_FILE = PROJECT_ROOT / "data" / "collected_data" / "live_features.csv"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-# 시간 바구니 크기 (5초 동안 들어오는 패킷/로그를 하나로 뭉침)
+COLLECTED_DATA_DIR = PROJECT_ROOT / "data" / "collected_data"
+COLLECTED_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+FEATURE_OUT_FILE = COLLECTED_DATA_DIR / "live_features.csv"
+
 WINDOW_SIZE = 5
 
 # ---------------------------------------------------------
